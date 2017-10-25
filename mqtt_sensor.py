@@ -34,7 +34,7 @@ def publish(name):
     print("Subscribing to topic : " + topic)
     client.subscribe(topic)
     while 1:
-        line = name + ": " + "Temperature : " + temp + " Humidity : " + humid
+        line = name + ": " + "Temperature : " + temperature " Humidity : " + humidity
         client.publish(topic, line)
         time.sleep(5)
 
