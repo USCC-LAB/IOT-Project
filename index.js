@@ -17,12 +17,16 @@ IP = "ws://" + IP + ":" + port;
 */
 
 var IP = "ws://140.116.82.42:9001";
-var sentences = "You are connecting to broker at : " + IP;
+var sentences = "You are connecting to broker at : " + "<br>" + IP;
+
+var ip_show = document.querySelector('#ip');
+ip_show.innerHTML = sentences;
+
 var main = document.querySelector('#demo');
-main.innerHTML = sentences + "<br>" + "<br>";
+main.innerHTML = "<br>" + "<br>";
 
 txt = document.querySelector('.textfield')
-txt.value = IP
+txt.value = ""
 //going to add button event
 
 var client = mqtt.connect(IP); // you add a ws:// url here
@@ -40,10 +44,12 @@ client.on("message",
 );
 var i ;
 
+/*
 for( i = 0 ; i < 3 ; i++ )
 {
 	client.publish( "mqtt/demo", "hello world! " + "lol" + i );
 }
+
 
 setTimeout(
 	function()
@@ -52,5 +58,6 @@ setTimeout(
 		client.end();
 	}, 
 50000);
+*/
 
 
