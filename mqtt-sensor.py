@@ -1,11 +1,8 @@
-import paho.mqtt.client as mqtt
 import time
-import _thread
-import os
 
-import time
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
+
 import Adafruit_DHT
 
 from PIL import Image
@@ -14,33 +11,16 @@ from PIL import ImageFont
 
 import subprocess
 
-
-# This is python mqtt client for sensor node
-# To use this python script please run the following command first
-#         pip3 install paho-mqtt
-# To run this program
-#         python3 mqtt_sensor.py
-
-# To do : 1.change the instance name for each node
+import paho.mqtt.client as mqtt
+import thread
+import os
 
 
 def on_message(client, userdata, message):
-    print("\n" + str(message.payload.decode("utf-8") + " (" + message.topic + ")") + "\n")
-
-
-# This is the public function, attach the data to the string variable here
-def publish(name):
-    client.loop_start()  # start the loop
-    print("Subscribing to topic : " + topic)
-    client.subscribe(topic)
-    while 1:
-        line = name + ": " + "Temperature : " + temperature " Humidity : " + humidity
-        client.publish(topic, line)
-        time.sleep(5)
-
+	print(str(message.payload.decode("utf-8") + " (" + message.topic + ")"))		
 
 # Raspberry Pi pin configuration:
-RST = None  # on the PiOLED this pin isnt used
+RST = None     # on the PiOLED this pin isnt used
 # Note the following are only used with SPI:
 DC = 23
 SPI_PORT = 0
@@ -66,13 +46,13 @@ image = Image.new('1', (width, height))
 draw = ImageDraw.Draw(image)
 
 # Draw a black filled box to clear the image.
-draw.rectangle((0, 0, width, height), outline=0, fill=0)
+draw.rectangle((0,0,width,height), outline=0, fill=0)
 
 # Draw some shapes.
 # First define some constants to allow easy resizing of shapes.
 padding = -2
 top = padding
-bottom = height - padding
+bottom = height-padding
 
 # Move left to right keeping track of the current x position for drawing shapes.
 x = 0
@@ -93,22 +73,16 @@ sensor = Adafruit_DHT.DHT22
 # connected to GPIO4
 pin = '4'
 
-# Try to grab a sensor reading. Use the read_retry method which will retry up
-# to 15 times to get a sensor readinf (waiting 2 second between each retry).
-
-humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
-
 # Note that sometimes you won't get a readin and
 # the results will be null (because Linux can't
 # guarantee the timing of calls to read the sensor).
 # If this happens try again!
-
 # Modify the broker ip here, default will be uscclab server
 broker_address = "140.116.82.42"
 
 # create new instance , change the instance name here to avoid crash
 print("creating new instance")
-instance = "Node 1"
+instance = "module_001"
 client = mqtt.Client(instance)
 client.on_message = on_message
 
@@ -118,38 +92,46 @@ client.connect(broker_address)  # connect to broker
 # Enter the topic to subscribe here, web default is "mqtt/demo"
 topic = "mqtt/demo"
 
-# start a new thread to pending user input and publish
-_thread.start_new_thread(publish, (instance,))  # format: start_new_thread(function_name ,("args","second args"))
+client.loop_start()  # start the loop
+print("Subscribing to topic : " + topic)
+client.subscribe(topic)
 
 while True:
+    # Try to grab a sensor reading. Use the read_retry method which will retry up
+    # to 15 times to get a sensor readinf (waiting 2 second between each retry).
+    humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
+    
     if humidity is not None and temperature is not None:
-        print('Temperature={0:0.1f}*C Humidity={1:0.1f}%'.format(temperature, humidity))
+        print('Temperature={0:0.1f}*C Humidity={1:0.1f}%'.format(temperature,humidity))
     else:
         print(".")
 
     # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=0)
+    draw.rectangle((0,0,width,height), outline=0, fill=0)
 
-    # Shell scripts for system monitoring from here :
+    # Shell scripts for system monitoring from here : 
     # https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
     cmd = "hostname -I | cut -d\' \' -f1 | head --bytes -1"
-    IP = subprocess.check_output(cmd, shell=True)
+    IP = subprocess.check_output(cmd, shell = True )
     cmd = "top -bn1 | grep load | awk '{printf \"%.2f\", $(NF-2)}'"
-    CPU = subprocess.check_output(cmd, shell=True)
+    CPU = subprocess.check_output(cmd, shell = True )
     cmd = "free -m | awk 'NR==2{printf \"MEM: %.2f%%\", $3*100/$2 }'"
-    MemUsage = subprocess.check_output(cmd, shell=True)
+    MemUsage = subprocess.check_output(cmd, shell = True )
+    
+    line = instance + ' ' + IP + ' Temperature={0:0.1f}*C Humidity={1:0.1f}%'.format(temperature,humidity)
+    client.publish(topic, line)
 
     # Icons
-    draw.text((x, top), unichr(61931), font=font2, fill=255)  # wifi icon
-    draw.text((x, top + 15), unichr(62171), font=font_icon_big, fill=255)  # cpu icon
-
-    draw.text((18, top), str(IP), font=font, fill=255)
-    draw.text((x + 22, top + 12), str(CPU), font=font_text_big, fill=255)
-    draw.text((x, top + 36), str(MemUsage), font=font, fill=255)
-
-    draw.text((x + 80, top + 36), '%0.1f' % humidity, font=font, fill=255)
-    draw.text((x + 80, top + 16), '%0.1f' % temperature, font=font, fill=255)
-
+    draw.text((x, top),       unichr(61931),  font=font2, fill=255) #wifi icon
+    draw.text((x, top+15),    unichr(62171),  font=font_icon_big, fill=255) #cpu icon
+    
+    draw.text((18, top),      str(IP),  font=font, fill=255) 
+    draw.text((x+22, top+12), str(CPU), font=font_text_big, fill=255) 
+    draw.text((x, top+36),    str(MemUsage),  font=font, fill=255)
+        
+    draw.text((x+80, top+36), '%0.1f'%humidity, font=font, fill = 255)
+    draw.text((x+80, top+16), '%0.1f'%temperature, font=font, fill=255)
+    
     # Display image.
     disp.image(image)
     disp.display()
