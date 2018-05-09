@@ -33,7 +33,7 @@ client.on_message = on_message # attach function to callback
 print("connecting to broker")
 client.connect(broker_address) # connect to broker
 
-topic = "mqtt/demo"
+topic = "mqtt/data"
 client.loop_start() # start the loop
 print("Subscribing to topic : " + topic)
 client.subscribe(topic)
