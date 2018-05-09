@@ -31,7 +31,7 @@ def publish(lol):
             time.sleep(0.5)
 
 
-broker_address = input(Enter the broker ip: )
+broker_address = input("Enter the broker ip: ")
 # broker_address = "140.116.82.42" 
 
 print("creating new instance")
