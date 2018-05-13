@@ -12,7 +12,22 @@ log_file = open("test.txt", "a+", 1)
 
 
 def on_message(client, userdata, message):
-    print("Topic : " + message.topic + "|| Message : " + str(message.payload.decode("utf-8")) + "\n")
+    msg = str(message.payload.decode("utf-8"))
+    if message.topic == "mqtt/control" and (msg == "ON" or msg == "OFF"):
+        t = datetime.now()
+        log_file.write("[" + str(t.year)[2:4] + "-" + str(t.month) + "-" + str(t.day) + "]")
+        log_file.write(str(t.hour) + ":" + str(t.minute) + ":" + str(t.second) + "~")
+        log_file.write(msg + "\n")
+    elif message.topic == "mqtt/control" and msg == "ACK":
+        f = open('test.txt')
+        line_list = f.readlines()
+        # print(line_list[-1])
+        if "ON" in line_list[-1]: 
+            print("ON")
+        else:
+            print("OFF")
+    
+    print("Topic : " + message.topic + " || Message : " + msg + "\n")
 
 
 def publish(lol):
@@ -31,30 +46,33 @@ def publish(lol):
             time.sleep(0.5)
 
 
-broker_address = input("Enter the broker ip: ")
-# broker_address = "140.116.82.42" 
+broker_address = input("Enter the broker ip(leave blank for default): ")
+if broker_address == "":
+    broker_address = "140.116.82.42" # default
 
-print("creating new instance")
-client = mqtt.Client("P3") # create new instance , change the instance name here to avoid crash
+
+# we need all together 3 instance
+# add later
+client = mqtt.Client("switch") 
 client.on_message = on_message # attach function to callback
-
-print("connecting to broker")
 client.connect(broker_address) # connect to broker
 
-topic = "mqtt/data"
+topic = input("Enter the topic(leave blank for default):")
+if topic == "":
+    topic = "mqtt/control"
+
+
 client.loop_start() # start the loop
 print("Subscribing to topic : " + topic)
 client.subscribe(topic)
-
-count = 0
 
 # start a new thread to pending user input and publish
 _thread.start_new_thread(publish, ("lol",))  # format: start_new_thread(function_name ,("args","second args"))
 
 while 1:
-    time.sleep(1)
-    t = datetime.now()
-    log_file.write("[" + str(t.year)[2:4] + "-" + str(t.month) + "-" + str(t.day) + "]")
-    log_file.write(str(t.hour) + ":" + str(t.minute) + ":" + str(t.second) + "~\n")
-    
+    # time.sleep(1)
+    # t = datetime.now()
+    # log_file.write("[" + str(t.year)[2:4] + "-" + str(t.month) + "-" + str(t.day) + "]")
+    # log_file.write(str(t.hour) + ":" + str(t.minute) + ":" + str(t.second) + "~\n")
+    pass
     
