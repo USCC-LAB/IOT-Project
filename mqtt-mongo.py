@@ -5,6 +5,7 @@ import os
 import pymongo
 from pymongo import MongoClient
 
+#收到訊息時，呼叫on_message()
 def on_message(client, userdata, message):
     print("Topic : " + message.topic + "|| Message : " + str(message.payload.decode("utf-8")) + "\n")
     post = {"text":str(message.payload.decode("utf-8"))}
@@ -28,8 +29,8 @@ def publish(lol):
 
 #mongodb part
 client = MongoClient()
-db = client.test
-posts = db.posts
+db = client.IOT
+posts = db.sensor_data
 # broker_address="192.168.1.184"  #enter ip here for local broker
 broker_address = "140.116.82.42"  # public broker
 
