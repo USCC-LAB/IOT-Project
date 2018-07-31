@@ -17,11 +17,12 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("mqtt/data")
     client.subscribe("mqtt/web")
     client.subscribe("mqtt/test")
+    client.subscribe("mqtt/dashboard")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, usrdata, msg):
-    if msg.topic == "mqtt/test":
-        print("Topic:" + msg.topic+" "+ "Message: " + str(msg.payload.decode("utf-8")))
+        #if msg.topic == "mqtt/test":
+    #print("Topic:" + msg.topic+" "+ "Message: " + str(msg.payload.decode("utf-8")))
     data = str(msg.payload.decode("utf-8"))
     if msg.topic == "mqtt/data":
         index_temp = data.find('Temperature')
@@ -30,22 +31,32 @@ def on_message(client, usrdata, msg):
         index_uv = data.find('UV')
         index_soil = data.find('Soil')
         index_press = data.find('Pressure')
+        index_time = data.find('Time')
         
-        insert_data = {"Temperature": data[12:17],
+        insert_data = {"Temperature": data[index_temp+12:index_temp+16],
                        "Humidity":data[index_humid+9:index_humid+14],
-                       "Light":data[index_light+6:index_light+11],
-                       "UV":data[index_uv+3:index_uv+8],
+                       "Light":data[index_light+6:index_light+13],
+                       "UV":data[index_uv+3:index_uv+9],
                        "Soil":data[index_soil+5:index_soil+11],
-                       "Pressure":data[index_press+9:index_press+16]
+                       "Pressure":data[index_press+9:index_press+17],
+                       "Time":data[index_time+10:index_time+24]
                        }
         collection.insert_one(insert_data)
     elif msg.topic == "mqtt/web":
         if data == "request":
             n = 0
-            for da in collection.find().sort('_id', pymongo.DESCENDING).limit(5):
+            for da in collection.find().sort('_id', pymongo.DESCENDING).limit(20):
                 client.publish("mqtt/web", str(n) + str(da))
                 n = n + 1
+                time.sleep(0.1)
+    elif msg.topic == "mqtt/dashboard":
+        if data == "request":
+            n = 0
+            for da in collection.find().sort('_id', pymongo.DESCENDING).limit(7):
+                client.publish("mqtt/dashboard", str(n) + str(da))
+                n = n + 1
                 time.sleep(0.5)
+
 
 def publish(arg):
     while 1:
