@@ -12,10 +12,10 @@ log_file = open("on_off.log", "a+", 1)
 
 
 def chg_str(value):
-	if value < 10:
-		return "0" + str(value)
-	else:
-		return str(value)
+    if value < 10:
+	return "0" + str(value)
+    else:
+        return str(value)
 
 def on_message(client, userdata, message):
     msg = str(message.payload.decode("utf-8"))

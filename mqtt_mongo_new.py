@@ -9,6 +9,15 @@ from pymongo import MongoClient
 
 # message format: 'Temperature:23.56 / Humidity:55.78 / Light:50000 / UV:53.54 / Soil:534.12 / Pressure:1012.15'
 
+log_file = open("on_off.log", "a+", 1)
+
+def chg_str(value):
+    if value < 10:
+	return "0" + str(value)
+    else:
+        return str(value)
+
+
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
 
@@ -42,6 +51,7 @@ def on_message(client, usrdata, msg):
                        "Time":data[index_time+10:index_time+24]
                        }
         collection.insert_one(insert_data)
+
     elif msg.topic == "mqtt/web":
         if data == "request":
             n = 0
@@ -49,6 +59,7 @@ def on_message(client, usrdata, msg):
                 client.publish("mqtt/web", str(n) + str(da))
                 n = n + 1
                 time.sleep(0.1)
+
     elif msg.topic == "mqtt/dashboard":
         if data == "request":
             n = 0
@@ -56,6 +67,24 @@ def on_message(client, usrdata, msg):
                 client.publish("mqtt/dashboard", str(n) + str(da))
                 n = n + 1
                 time.sleep(0.5)
+    
+    elif msg.topic == "mqtt/control" and (data == "ON" or data == "OFF"):
+        t = datetime.now()
+			
+        log_file.write("[" + str(t.year)[2:4] + "-" + chg_str(t.month) + "-" + chg_str(t.day) + "] ")
+        log_file.write(chg_str(t.hour) + ":" + chg_str(t.minute) + ":" + chg_str(t.second) + " ~ ")
+        log_file.write(msg + "\n")
+        
+    elif message.topic == "mqtt/control" and msg == "ACK":
+        f = open('on_off.log')
+        line_list = f.readlines()
+        # print(line_list[-1])
+        if "ON" in line_list[-1]: 
+            print("ON")
+        else:
+            print("OFF")
+    
+
 
 
 def publish(arg):
