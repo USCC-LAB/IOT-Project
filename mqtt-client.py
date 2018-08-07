@@ -19,7 +19,7 @@ def publish(lol):
             os._exit(1)
             break
         else:
-            client.publish(topic, line)
+            client.publish("mqtt/control", line)
             time.sleep(0.5)
 
 
@@ -33,10 +33,11 @@ client.on_message = on_message # attach function to callback
 print("connecting to broker")
 client.connect(broker_address) # connect to broker
 
-topic = "mqtt/data"
+topic = "mqtt/control"
 client.loop_start() # start the loop
 print("Subscribing to topic : " + topic)
-client.subscribe(topic)
+client.subscribe("mqtt/control")
+client.subscribe("mqtt/schedule")
 
 count = 0
 
