@@ -5,7 +5,9 @@ import _thread
 import time
 import os
 import pymongo
+import numpy as np
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 # message format: 'Temperature:23.56 / Humidity:55.78 / Light:50000 / UV:53.54 / Soil:534.12 / Pressure:1012.15'
 
@@ -13,7 +15,7 @@ log_file = open("on_off.log", "a+", 1)
 
 def chg_str(value):
     if value < 10:
-	return "0" + str(value)
+        return "0" + str(value)
     else:
         return str(value)
 
@@ -33,8 +35,9 @@ def on_message(client, usrdata, msg):
         #if msg.topic == "mqtt/test":
     #print("Topic:" + msg.topic+" "+ "Message: " + str(msg.payload.decode("utf-8")))
     data = str(msg.payload.decode("utf-8"))
+    
     if msg.topic == "mqtt/data":
-        index_temp = data.find('Temperature')
+        '''index_temp = data.find('Temperature')
         index_humid = data.find('Humidity')
         index_light = data.find('Light')
         index_uv = data.find('UV')
@@ -49,25 +52,56 @@ def on_message(client, usrdata, msg):
                        "Soil":data[index_soil+5:index_soil+11],
                        "Pressure":data[index_press+9:index_press+17],
                        "Time":data[index_time+10:index_time+24]
+                       }'''
+        temp = slice_data("Temperature", data)
+        humid = slice_data("Humidity", data)
+        light = slice_data("Light", data)
+        uv = slice_data("UV", data)
+        soil = slice_data("Soil", data)
+        press = slice_data("Pressure", data)
+        time = slice_data("Time", data)
+
+        insert_data = {"Temperature": temp,
+                       "Humidity": humid,
+                       "Light": light,
+                       "UV": uv,
+                       "Soil": soil,
+                       "Pressure": press,
+                       "Time": time
                        }
+        print(insert_data)
         collection.insert_one(insert_data)
 
     elif msg.topic == "mqtt/web":
-        if data == "request":
-            n = 0
-            for da in collection.find().sort('_id', pymongo.DESCENDING).limit(20):
-                client.publish("mqtt/web", str(n) + str(da))
-                n = n + 1
-                time.sleep(0.1)
+        # message format: request ooooo xxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxx
+        if data[0:7] == "request":
+            #n = 0
+            #for da in collection.find().sort('_id', pymongo.DESCENDING).limit(int(data[7:9])):
+                #client.publish("mqtt/web", str(n) + str(da))
+                #n = n + 1
+                #time.sleep(0.1)
+            
+            db_data = []
+            during = data[8:13]
+            id1 = data[14:38]
+            id2 = data[39:63]
+            
+            print("id1: "+id1)
+            print("id2: "+id2)
+
+            for da in collection.find({"_id": {"$gte": ObjectId(id1), "$lt": ObjectId(id2)}}):
+                db_data.append(da)
+            
+            
+            #print(db_data)
+            
+            compute(during, db_data);
+            #print(base)
+            # form_data fromat: "{Temperature:xx.xx / Humidity:xx.xx / ...} | {...} | {...}"
+            #client.publish("mqtt/web", str(db_data))
 
     elif msg.topic == "mqtt/dashboard":
-        if data == "request":
-            n = 0
-            for da in collection.find().sort('_id', pymongo.DESCENDING).limit(7):
-                client.publish("mqtt/dashboard", str(n) + str(da))
-                n = n + 1
-                time.sleep(0.5)
-    
+        pass 
     elif msg.topic == "mqtt/control" and (data == "ON" or data == "OFF"):
         t = datetime.now()
 			
@@ -84,7 +118,81 @@ def on_message(client, usrdata, msg):
         else:
             print("OFF")
     
+def slice_data(dt_type, toslice):
+    toslice = toslice[toslice.find(dt_type):]
+    slash = toslice.find("/")
+    data = toslice[slash+2:]
+    print(data)
 
+    if dt_type == "Temperature":
+        return toslice[12 : slash-1]
+    elif dt_type == "Humidity":
+        return toslice[9 : slash-1]
+    elif dt_type == "Light":
+        return toslice[6 : slash-1]
+    elif dt_type == "UV":
+        return toslice[3 : slash-1]
+    elif dt_type == "Soil":
+        return toslice[5 : slash-1]
+    elif dt_type == "Pressure":
+        return toslice[9 : slash-1]
+    elif dt_type == "Time":
+        return toslice[5 :]
+
+def compute(during, data_dic):
+    #print(type(data_str[0]['_id']))
+    base = []
+    date = ""
+    for one_dic in data_dic:
+        if during == "month":
+            if one_dic["Time"][0:3] == "201":
+                if date != one_dic["Time"][5:10]:
+                    append_new = True
+                    date = one_dic["Time"][5:10]
+                elif date == one_dic["Time"][5:10]:
+                    append_new = False
+            elif one_dic["Time"][2] == "-":
+                if date != one_dic["Time"][0:5]:
+                    append_new = True
+                    date = one_dic["Time"][0:5]
+                elif date == one_dic["Time"][0:5]:
+                    append_new = False
+            if date == "":
+                continue
+            try:
+                one = [float(one_dic["Temperature"]), float(one_dic["Humidity"]), float(one_dic["Light"]), float(one_dic["UV"]), float(one_dic["Soil"]), float(one_dic["Pressure"]), int(date[0:2]+date[3:5])]
+            except:
+                continue
+            else:
+                #print(one)
+                base.append(one)
+
+
+
+        elif during == " week":
+            pass
+        elif during == "  day":
+            pass
+
+    oneday = base[0][6]
+    mean_base = []
+    mean_list = []
+    first = True
+    count = 0;
+    for i in base:
+        if i[6] != oneday or count == len(base)-1:
+            oneday = i[6]
+            mean_arr = np.array(mean_list)
+            mean_arr = np.mean(mean_arr, 0)
+            mean_arr = mean_arr.tolist()
+            mean_base.append(mean_arr)
+            mean_list = []
+        mean_list.append(i)
+        count += 1
+    
+    print("mean")
+    print(mean_base)
+    client.publish("mqtt/web", str(mean_base))
 
 
 def publish(arg):
@@ -97,7 +205,7 @@ def publish(arg):
             client.unsubscribe("mqtt/web")
             client.disconnect()
             os._exit(1)
-            break;
+            break
         else:
             client.publish("mqtt/test", msg)
             time.sleep(0.5)

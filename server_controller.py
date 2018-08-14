@@ -63,8 +63,9 @@ def on_message(client, userdata, message):
         client.publish("mqtt/schedule", "server_" + get_schedule_str())
     
     elif message.topic == "mqtt/schedule" and msg[0:6] != "server":
-        log_sche.write("\n" + msg)
-        print("File write success")
+        ch = log_sche.write("\n" + msg)
+        if ch != 0:
+            print("File write success")
         client.publish("mqtt/schedule", "server_" + get_schedule_str())
         
     print("Topic : " + message.topic + " || Message : " + msg + "\n")
