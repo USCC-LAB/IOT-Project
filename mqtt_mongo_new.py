@@ -86,19 +86,26 @@ def on_message(client, usrdata, msg):
             id1 = data[14:38]
             id2 = data[39:63]
             
-            print("id1: "+id1)
+            print("\nid1: "+id1)
             print("id2: "+id2)
-
-            for da in collection.find({"_id": {"$gte": ObjectId(id1), "$lt": ObjectId(id2)}}):
-                db_data.append(da)
+            one = True
+            #for da in collection.find({"_id": {"$gt": ObjectId(id1), "$lt": ObjectId(id2)}}):
+            for da in collection.find({"_id": {"$gt": ObjectId(id1)}}):
+                if da["_id"] >= ObjectId(id2):
+                    break;
+                if one == True:
+                    one = False
+                elif one == False:
+                    db_data.append(da)
             
+            if db_data == []:
+                client.publish("mqtt/web", "no data")
+            else:
+                compute(during, db_data);
             
-            #print(db_data)
-            
-            compute(during, db_data);
-            #print(base)
             # form_data fromat: "{Temperature:xx.xx / Humidity:xx.xx / ...} | {...} | {...}"
-            #client.publish("mqtt/web", str(db_data))
+        elif data == "too early":
+            client.publish("mqtt/web", "no data")
 
     elif msg.topic == "mqtt/dashboard":
         pass 
@@ -143,20 +150,18 @@ def compute(during, data_dic):
     #print(type(data_str[0]['_id']))
     base = []
     date = ""
+    co = 0
+    #print(data_dic)
     for one_dic in data_dic:
+        co += 1
+            #print("one_dic start", end = " ")
         if during == "month":
             if one_dic["Time"][0:3] == "201":
                 if date != one_dic["Time"][5:10]:
-                    append_new = True
                     date = one_dic["Time"][5:10]
-                elif date == one_dic["Time"][5:10]:
-                    append_new = False
             elif one_dic["Time"][2] == "-":
                 if date != one_dic["Time"][0:5]:
-                    append_new = True
                     date = one_dic["Time"][0:5]
-                elif date == one_dic["Time"][0:5]:
-                    append_new = False
             if date == "":
                 continue
             try:
@@ -166,33 +171,67 @@ def compute(during, data_dic):
             else:
                 #print(one)
                 base.append(one)
-
-
-
         elif during == " week":
-            pass
+            if one_dic["Time"][0:3] == "201":
+                if date != one_dic["Time"][5:10]:
+                    date = one_dic["Time"][5:10]
+            elif one_dic["Time"][2] == "-":
+                if date != one_dic["Time"][0:5]:
+                    date = one_dic["Time"][0:5]
+            if date == "":
+                continue
+            try:
+                one = [float(one_dic["Temperature"]), float(one_dic["Humidity"]), float(one_dic["Light"]), float(one_dic["UV"]), float(one_dic["Soil"]), float(one_dic["Pressure"]), int(date[0:2]+date[3:5])]
+            except:
+                continue
+            else:
+                #print(one)
+                base.append(one)
         elif during == "  day":
-            pass
-
-    oneday = base[0][6]
-    mean_base = []
-    mean_list = []
-    first = True
-    count = 0;
-    for i in base:
-        if i[6] != oneday or count == len(base)-1:
-            oneday = i[6]
-            mean_arr = np.array(mean_list)
-            mean_arr = np.mean(mean_arr, 0)
-            mean_arr = mean_arr.tolist()
-            mean_base.append(mean_arr)
-            mean_list = []
-        mean_list.append(i)
-        count += 1
+            if one_dic["Time"][0:3] == "201":
+                if date != one_dic["Time"][11:13]:
+                    date = one_dic["Time"][11:13]
+            elif one_dic["Time"][2] == "-":
+                if date != one_dic["Time"][6:8]:
+                    date = one_dic["Time"][6:8]
+            if date == "":
+                continue
+            try:
+                one = [float(one_dic["Temperature"]), float(one_dic["Humidity"]), float(one_dic["Light"]), float(one_dic["UV"]), float(one_dic["Soil"]), float(one_dic["Pressure"]), int(date)]
+            except Exception as e:
+                    #print(co, end = " ")
+                    #print("err:", end = "")
+                #print(e, end = " ")
+                continue
+            else:
+                    #print(co, end = " ")
+                #print("print one[6]:", end = "")
+                #print(one[6])
+                base.append(one)
+    #print(base)
+    try:
+        oneday = base[0][6]
+    except:
+        print("illegal operation")
+    else:
+        mean_base = []
+        mean_list = []
+        first = True
+        count = 0;
+        for i in base:
+            if i[6] != oneday or count == len(base)-1:
+                oneday = i[6]
+                mean_arr = np.array(mean_list)
+                mean_arr = np.mean(mean_arr, 0)
+                mean_list = mean_arr.tolist()
+                mean_base.append(mean_list)
+                mean_list = []
+            mean_list.append(i)
+            count += 1
     
-    print("mean")
-    print(mean_base)
-    client.publish("mqtt/web", str(mean_base))
+        print("mean")
+        print(mean_base)
+        client.publish("mqtt/web", str(mean_base))
 
 
 def publish(arg):
