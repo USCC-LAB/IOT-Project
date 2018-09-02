@@ -5,7 +5,7 @@ import os
 
 
 def on_message(client, userdata, message):
-    print("Topic : " + message.topic + "|| Message : " + str(message.payload.decode("utf-8")) + "\n")
+    print("\nTopic : " + message.topic + "\n|| Message : " + str(message.payload.decode("utf-8")) + "\n")
 
 
 def publish(lol):
@@ -19,15 +19,15 @@ def publish(lol):
             os._exit(1)
             break
         else:
-            client.publish("mqtt/control", line)
+            client.publish("mqtt/schedule", line, retain=True)
             time.sleep(0.5)
 
 
-# broker_address="192.168.1.184"  #enter ip here for local broker
-broker_address = "140.116.82.42"  # public broker
+#Enter broker address
+broker_address = input("Enter IP here: ")  
 
-print("creating new instance")
-client = mqtt.Client("P3") # create new instance , change the instance name here to avoid crash
+client = mqtt.Client("P3") # create new instance , change the instance name here for new client to avoid crash
+client.username_pw_set("weblogin", "wtf123") # built-in function, first arg => username, second arg => password, comment this line to avoid password authentication
 client.on_message = on_message # attach function to callback
 
 print("connecting to broker")
