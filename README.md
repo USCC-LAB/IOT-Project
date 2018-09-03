@@ -1,6 +1,6 @@
-# Project Title
+# Integrated IOT Solutions for Agriculture
 
-One Paragraph of project description goes here
+This is a project done by a group of students from National Cheng Kung University.This project aims to provide easy setup of IOT system to users ranged from compuer newbie to advanced users. 
 
 ## Getting Started
 
@@ -8,29 +8,12 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+As the main part of the project consists of the IOT protocol - MQTT, you will need to install the python API to use our code.
 
+Installing using python-pip
 ```
-Give examples
+pip3 install paho-mqtt
 ```
-
-### Installing
-
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo
 
 ## Running the tests
 
