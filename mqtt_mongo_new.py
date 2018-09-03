@@ -25,7 +25,7 @@ def on_connect(client, userdata, flags, rc):
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
-    client.subscribe("mqtt/data")
+    client.subscribe("uscclab/gateway_001/module_001/data")
     client.subscribe("mqtt/web")
     client.subscribe("mqtt/test")
     client.subscribe("mqtt/dashboard")
@@ -33,10 +33,10 @@ def on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, usrdata, msg):
         #if msg.topic == "mqtt/test":
-    #print("Topic:" + msg.topic+" "+ "Message: " + str(msg.payload.decode("utf-8")))
+    print("Topic:" + msg.topic+" "+ "Message: " + str(msg.payload.decode("utf-8")))
     data = str(msg.payload.decode("utf-8"))
     
-    if msg.topic == "mqtt/data":
+    if msg.topic == "uscclab/gateway_001/module_001/data":
         '''index_temp = data.find('Temperature')
         index_humid = data.find('Humidity')
         index_light = data.find('Light')
@@ -70,7 +70,8 @@ def on_message(client, usrdata, msg):
                        "Time": time
                        }
         print(insert_data)
-        collection.insert_one(insert_data)
+        if temp != "0.0":
+            collection.insert_one(insert_data)
 
     elif msg.topic == "mqtt/web":
         # message format: request ooooo xxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxx
@@ -88,14 +89,14 @@ def on_message(client, usrdata, msg):
             
             print("\nid1: "+id1)
             print("id2: "+id2)
-            one = True
+            count = 0
             #for da in collection.find({"_id": {"$gt": ObjectId(id1), "$lt": ObjectId(id2)}}):
             for da in collection.find({"_id": {"$gt": ObjectId(id1)}}):
                 if da["_id"] >= ObjectId(id2):
                     break;
-                if one == True:
-                    one = False
-                elif one == False:
+                if count < 5:
+                    count += 1
+                elif count == 5:
                     db_data.append(da)
             
             if db_data == []:
@@ -109,7 +110,7 @@ def on_message(client, usrdata, msg):
 
     elif msg.topic == "mqtt/dashboard":
         pass 
-    elif msg.topic == "mqtt/control" and (data == "ON" or data == "OFF"):
+    '''elif msg.topic == "mqtt/control" and (data == "ON" or data == "OFF"):
         t = datetime.now()
 			
         log_file.write("[" + str(t.year)[2:4] + "-" + chg_str(t.month) + "-" + chg_str(t.day) + "] ")
@@ -123,7 +124,7 @@ def on_message(client, usrdata, msg):
         if "ON" in line_list[-1]: 
             print("ON")
         else:
-            print("OFF")
+            print("OFF")'''
     
 def slice_data(dt_type, toslice):
     toslice = toslice[toslice.find(dt_type):]
@@ -223,6 +224,7 @@ def compute(during, data_dic):
                 oneday = i[6]
                 mean_arr = np.array(mean_list)
                 mean_arr = np.mean(mean_arr, 0)
+                mean_arr = np.around(mean_arr, decimals=2)
                 mean_list = mean_arr.tolist()
                 mean_base.append(mean_list)
                 mean_list = []
@@ -240,7 +242,7 @@ def publish(arg):
         if msg == "":
             print("No input, program will end now...")
             client.loop_stop()
-            client.unsubscribe("mqtt/data")
+            client.unsubscribe("uscclab/gateway_001/module_001/data")
             client.unsubscribe("mqtt/web")
             client.disconnect()
             os._exit(1)
