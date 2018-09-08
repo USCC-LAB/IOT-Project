@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <title>農業物聯網系統</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="./images/leaf.ico" rel="SHORTCUT ICON">
+    <!--link rel="stylesheet" type="text/css" href="css/demo.css" /-->
+    <!--link rel="stylesheet" type="text/css" href="css/style.css" /-->
+    <!--script src="js/modernizr.custom.97074.js"></script-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Architects+Daughter|Bellefair" rel="stylesheet">
+    <!--noscript><link rel="stylesheet" type="text/css" href="css/noJS.css"/></noscript-->
+
+    <!-- Bootstrap core CSS, JS-->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+
+    <script src="js/browserMqtt.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gijgo@1.9.10/js/gijgo.min.js" type="text/javascript"></script>
+    <link href="https://cdn.jsdelivr.net/npm/gijgo@1.9.10/css/gijgo.min.css" rel="stylesheet" type="text/css" />
+
+
+    <!--something for pretty buttons-->
+    <style>
+        .btn-glyphicon {
+            padding: 8px;
+            background: #ffffff;
+            margin-right: 4px;
+        }
+
+        .icon-btn {
+            padding: 1px 15px 3px 2px;
+            border-radius: 50px
+        }
+    </style>
+</head>
+
+<body style="background-image:url('./images/bg5.jpg'); background-repeat:no-repeat; background-color:#444444; background-size:cover; background-position: center center; font-family:Microsoft JhengHei">
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar"></button>
+                <a class="navbar-brand" href="index.html" style="color:white;">
+                    <img style="max-height:56px; margin-top:-21px" src="./images/logo1.jpg">
+                </a>
+            </div>
+            <div class="collapse navbar-collapse" id="myNavbar">
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="active">
+                        <a href="index.html">主頁</a>
+                    </li>
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">農田
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" style="text-align:center">
+                            <li>農田(1)</li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">感測器
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" style="text-align:center">
+                            <li>感測器(1)</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="real.html">即時數據</a>
+                    </li>
+
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">歷史數據
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="dashboard.html">折線圖</a>
+                            </li>
+                            <li>
+                                <a href="form.html">表格</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="contact.html">聯絡我們</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container" style="margin-top: 50px; ">
+        <div class="row" style="margin-bottom: 20px">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom" style="height:50px;">
+                <div class="col-sm-4" style="height:60px;">
+                    <h2 style="color:#666666; background:-webkit-linear-gradient(left, rgba(255,255,255), rgba(255, 255, 255, 0.0))">感測器-1</h1>
+                </div>
+                <div class="col-sm-6" align="right" style="height:60px; padding-right: 0px">
+                    <h3 style="color:white;height:60px; line-height:60px; margin-top:10px; margin-right: 0px">灑水器</h3>
+                </div>
+                <div class="col-sm-2" align="left" style="height:60px; padding-left:4px">
+                    <div class="onoffswitch">
+                        <input type="checkbox" onclick="switchon()" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+                        <label class="onoffswitch-label" for="myonoffswitch" style="margin-top:25px"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="thermometer"></span>
+                    <span style="font-size: 28px;">空氣溫度</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="temp"></div>
+                </div>
+            </div>
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="droplet"></span>
+                    <span style="font-size: 28px;">空氣溼度</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="humid"></div>
+                </div>
+            </div>
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="sun"></span>
+                    <span style="font-size: 28px ;">光照強度</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="light"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="zap"></span>
+                    <span style="font-size: 28px;">紫外線強度</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="uv"></div>
+                </div>
+            </div>
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="feather"></span>
+                    <span style="font-size: 28px;">土壤溼度</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="soil"></div>
+                </div>
+            </div>
+            <div class="col-sm-3" style="text-align: center; margin-left:42px; margin-right:42px">
+                <div class="well" style="background: rgba(255,255,255,0.6)">
+                    <span data-feather="cloud"></span>
+                    <span style="font-size: 28px;">大氣壓力</span>
+                    <div style="height:80px; line-height:80px; font-size:xx-large" id="press"></div>
+                </div>
+            </div>
+        </div>
+        <hr color="gray" style="margin-top: 50px; height:1px; width:90%" />
+        <div class="row">
+            <div class="col-sm-4" style="height:40px; margin-bottom:20px">
+                <h2 style="color:white; margin-top:0px; margin-bottom:20px; height:40px; line-height:40px; color:#666666; background:-webkit-linear-gradient(left, rgba(255, 255, 255), rgba(255, 255, 255, 0.0))">灌溉排程</h2>
+            </div>
+
+            <div class="col-sm-6" style="height:40px; margin-bottom:20px"></div>
+            <div class="col-sm-2" align="left" style="padding-left:29px; margin-top:0px; height:40px; margin-bottom:20px">
+                <button type="button" class="btn btn-success icon-btn" style="font-size:18px; margin-bottom:20px;" onclick="create_table('add')">
+                    <span class="glyphicon glyphicon-plus img-circle text-success btn-glyphicon"></span>新增</button>
+
+            </div>
+            <div>
+                <div class="col-sm-11" style="margin-left:42px; margin-right:42px">
+                    <div clas="well" style="background: rgba(255, 255, 255, 0.6)">
+                        <div id="tbl-id"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+        <script>feather.replace()</script>
+        <link rel="stylesheet" href="css/onoffswitch.css">
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/real.js"></script>
+</body>
+
+
+</html>
