@@ -94,9 +94,9 @@ def on_message(client, usrdata, msg):
             for da in collection.find({"_id": {"$gt": ObjectId(id1)}}):
                 if da["_id"] >= ObjectId(id2):
                     break;
-                if count < 5:
+                if count < 10:
                     count += 1
-                elif count == 5:
+                elif count == 10:
                     db_data.append(da)
             
             if db_data == []:
